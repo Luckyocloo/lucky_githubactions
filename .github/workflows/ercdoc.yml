@@ -1,0 +1,54 @@
+name: Build and Deploy Docker Image to AWS ECR && Docker Hub
+
+on:
+  push:
+    branches:
+      - main  # Trigger on pushes to the main branch
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    env:
+      CONTAINER_REGISTRY: docker.io
+      IMAGE_NAME: cool-resume
+      DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}  # Using repo variable
+      DOCKER_PASSWORD: ${{ vars.DOCKER_PASSWORD }}  # Using repo variable
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 3: Log in to AWS ECR
+      - name: Log in to AWS ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin public.ecr.aws
+
+      # Step 4: Build Docker image
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:latest .
+          docker tag ${{ env.IMAGE_NAME }}:latest public.ecr.aws/q8d1a8l9/cool-resume:latest
+
+      # Step 5: Push to AWS ECR
+      - name: Push Docker Image to AWS ECR
+        run: docker push public.ecr.aws/q8d1a8l9/cool-resume:latest
+
+      # Step 6: Log in to Docker Hub using repository variables
+      - name: Log in to Docker Hub
+        run: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin ${{ env.CONTAINER_REGISTRY }}
+
+      # Step 7: Tag and Push Docker Image to Docker Hub
+      - name: Tag and Push Docker Image to Docker Hub
+        run: |
+          docker tag ${{ env.IMAGE_NAME }}:latest ${{ env.CONTAINER_REGISTRY }}/${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.CONTAINER_REGISTRY }}/${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest

@@ -37,11 +37,11 @@ jobs:
       - name: Build Docker Image
         run: |
           docker build -t ${{ env.IMAGE_NAME }}:latest .
-          docker tag ${{ env.IMAGE_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ env.IMAGE_NAME }}:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/isaac/${{ env.IMAGE_NAME }}:latest
 
       # Step 5: Push to AWS ECR
       - name: Push Docker Image to AWS ECR
-        run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.IMAGE_NAME }}:latest
+        run: docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/isaac/${{ env.IMAGE_NAME }}:latest
 
       # Step 6: Log in to Docker Hub using repository variables
       - name: Log in to Docker Hub

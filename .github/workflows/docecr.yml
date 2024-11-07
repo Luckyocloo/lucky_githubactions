@@ -1,0 +1,62 @@
+name: Build and Push Docker Image to AWS ECR and Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: cool-resume
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 3: Log in to AWS ECR
+      - name: Log in to AWS ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REPOSITORY }}
+
+      # Step 4: Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.ECR_REPOSITORY }}:latest .
+      
+      # Step 5: Tag Docker image for AWS ECR
+      - name: Tag Docker image for AWS ECR
+        run: |
+          docker tag ${{ secrets.ECR_REPOSITORY }}:latest ${{ secrets.ECR_REPOSITORY }}:latest
+
+      # Step 6: Push Docker image to AWS ECR
+      - name: Push Docker image to AWS ECR
+        run: |
+          docker push ${{ secrets.ECR_REPOSITORY }}:latest
+
+      # Step 7: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        run: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+
+      # Step 8: Tag Docker image for Docker Hub
+      - name: Tag Docker image for Docker Hub
+        run: |
+          docker tag ${{ secrets.ECR_REPOSITORY }}:latest $DOCKER_USERNAME/${{ env.IMAGE_NAME }}:latest
+
+      # Step 9: Push Docker image to Docker Hub
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push $DOCKER_USERNAME/${{ env.IMAGE_NAME }}:latest

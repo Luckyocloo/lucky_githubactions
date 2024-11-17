@@ -33,11 +33,11 @@ jobs:
     
     - name: Tag the Docker image for ECR
       run: |
-        docker tag resume-app:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/resume-app:latest
+        docker tag resume-app:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/resume-app:latest
 
     - name: Push the Docker image to ECR
       run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/resume-app:latest
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/resume-app:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,19 +49,6 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+        aws-region: eu-west-2  # Set the region to London
     
-    - name: Update ECS service to use the new Docker image
-      run: |
-        ecs_service_name="resume-app-service"
-        cluster_name="resume-app-cluster"
-        container_name="resume-app"
-        image_uri="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/resume-app:latest"
-        task_definition=$(aws ecs describe-task-definition --task-definition $ecs_service_name)
-        family_name=$(echo $task_definition | jq -r .taskDefinition.family)
-        revision=$(echo $task_definition | jq -r .taskDefinition.revision)
-        new_task_definition=$(aws ecs register-task-definition --family $family_name --container-definitions "$(echo $task_definition | jq '.taskDefinition.containerDefinitions' | jq ".[0].image=\"$image_uri\"")")
-        new_revision=$(echo $new_task_definition | jq -r .taskDefinition.revision)
-
-        # Update the ECS service
-        aws ecs update-service --cluster $cluster_name --service $ecs_service_name --task-definition $family_name:$new_revision
+    - name: Update ECS service to 

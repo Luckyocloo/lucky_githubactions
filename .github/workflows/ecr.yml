@@ -17,14 +17,4 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: <region>
-
-      - name: Log in to Amazon ECR
-        run: |
-          aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <account_id>.dkr.ecr.<region>.amazonaws.com
-
-      - name: Build, Tag, and Push Image
-        run: |
-          docker build -t resume-app .
-          docker tag resume-app:latest <account_id>.dkr.ecr.<region>.amazonaws.com/<repository_name>:latest
-          docker push <account_id>.dkr.ecr.<region>.amazonaws.com/<repository_name>:latest
+          aws-region: eu-west-

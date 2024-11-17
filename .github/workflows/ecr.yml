@@ -51,4 +51,17 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-west-2  # Set the region to London
     
-    - name: Update ECS service to 
+    - name: Update ECS service to use the new Docker image
+      run: |
+        ecs_service_name="resume-app-service"
+        cluster_name="resume-app-cluster"
+        container_name="resume-app"
+        image_uri="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.eu-west-2.amazonaws.com/resume-app:latest"
+        task_definition=$(aws ecs describe-task-definition --task-definition $ecs_service_name)
+        family_name=$(echo $task_definition | jq -r .taskDefinition.family)
+        revision=$(echo $task_definition | jq -r .taskDefinition.revision)
+        new_task_definition=$(aws ecs register-task-definition --family $family_name --container-definitions "$(echo $task_definition | jq '.taskDefinition.containerDefinitions' | jq ".[0].image=\"$image_uri\"")")
+        new_revision=$(echo $new_task_definition | jq -r .taskDefinition.revision)
+
+        # Update the ECS service
+        aws ecs update-service --cluster $cluster_name --service $ecs_service_name --task-definition $family_name:$new_revision
